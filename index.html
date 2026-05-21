@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AURA — Hear everything. Block out the rest.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #080808;
+    --bg-2: #0d0d0f;
+    --ink: #ffffff;
+    --mute: #9b9ba3;
+    --mute-2: #3a3a40;
+    --accent: #2563EB;
+    --accent-soft: rgba(37, 99, 235, 0.18);
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+    height: 100vh;
+    cursor: none;
+  }
+
+  /* Snap scroll container */
+  .snap-wrap {
+    height: 100vh;
+    width: 100vw;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .snap-wrap::-webkit-scrollbar { display: none; }
+
+  .snap-section {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Section snap reveal: child reveal-on-snap animations */
+  .snap-section .snap-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 900ms cubic-bezier(.2,.7,.2,1), transform 900ms cubic-bezier(.2,.7,.2,1);
+  }
+  .snap-section.snapped .snap-reveal { opacity: 1; transform: translateY(0); }
+  .snap-section.snapped .snap-reveal.d1 { transition-delay: 80ms; }
+  .snap-section.snapped .snap-reveal.d2 { transition-delay: 160ms; }
+  .snap-section.snapped .snap-reveal.d3 { transition-delay: 240ms; }
+  .snap-section.snapped .snap-reveal.d4 { transition-delay: 320ms; }
+  .snap-section.snapped .snap-reveal.d5 { transition-delay: 400ms; }
+
+  /* Snap nav dots */
+  .snap-dots {
+    position: fixed;
+    right: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 10px;
+  }
+  .snap-dot {
+    width: 9px; height: 9px;
+    border-radius: 99px;
+    border: 1px solid rgba(255,255,255,0.45);
+    background: transparent;
+    padding: 0;
+    cursor: none;
+    position: relative;
+    transition: transform 280ms cubic-bezier(.2,.7,.2,1), background 280ms, border-color 280ms, box-shadow 280ms;
+  }
+  .snap-dot::after {
+    content: attr(data-label);
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%) translateX(6px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: rgba(8,8,8,0.7);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+    padding: 6px 10px;
+    border-radius: 4px;
+    opacity: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 240ms cubic-bezier(.2,.7,.2,1), transform 240ms cubic-bezier(.2,.7,.2,1);
+  }
+  .snap-dot:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+  .snap-dot.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(37,99,235,0.7), 0 0 0 4px rgba(37,99,235,0.12);
+    transform: scale(1.15);
+  }
+  .syne { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* Grain */
+  .grain {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* Custom cursor */
+  .cursor-dot {
+    position: fixed;
+    top: 0; left: 0;
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 18px 4px rgba(37,99,235,0.7), 0 0 40px 8px rgba(37,99,235,0.35);
+    pointer-events: none;
+    transform: translate3d(-50%,-50%,0);
+    z-index: 10000;
+    transition: width 220ms cubic-bezier(.2,.7,.2,1), height 220ms cubic-bezier(.2,.7,.2,1), background 220ms;
+    mix-blend-mode: screen;
+  }
+  .cursor-dot.hover { width: 36px; height: 36px; background: rgba(37,99,235,0.7); }
+  .cursor-ring {
+    position: fixed; top: 0; left: 0;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(37,99,235,0.4);
+    border-radius: 999px;
+    transform: translate3d(-50%,-50%,0);
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 120ms linear, opacity 220ms;
+    opacity: 0.65;
+  }
+
+  /* Scroll progress */
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), #60a5fa);
+    z-index: 10001;
+    width: 0%;
+    box-shadow: 0 0 12px rgba(37,99,235,0.7);
+  }
+
+  /* Nav */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 40px;
+    transition: backdrop-filter 300ms ease, background 300ms ease, border-color 300ms ease;
+    border-bottom: 1px solid transparent;
+  }
+  .nav.scrolled {
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    background: rgba(8,8,8,0.55);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+  }
+  .nav .links {
+    display: flex; gap: 36px;
+    font-size: 14px;
+    color: var(--mute);
+  }
+  .nav .links a {
+    color: var(--mute);
+    text-decoration: none;
+    transition: color 200ms;
+    position: relative;
+  }
+  .nav .links a:hover { color: #fff; }
+  .nav .links a::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -6px;
+    height: 1px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 300ms cubic-bezier(.2,.7,.2,1);
+  }
+  .nav .links a:hover::after { transform: scaleX(1); }
+
+  /* Glass button */
+  .glass-btn {
+    position: relative;
+    padding: 12px 22px;
+    border-radius: 999px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+      rgba(255,255,255,0.04);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      inset 0 -10px 30px rgba(255,255,255,0.04),
+      0 10px 30px rgba(0,0,0,0.4);
+    cursor: none;
+    transition: transform 280ms cubic-bezier(.2,.7,.2,1), box-shadow 280ms, border-color 280ms;
+    overflow: hidden;
+  }
+  .glass-btn::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(120px 80px at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.18), transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 280ms;
+  }
+  .glass-btn:hover::before { opacity: 1; }
+  .glass-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255,255,255,0.22);
+  }
+  .glass-btn:active { transform: translateY(0) scale(0.98); }
+
+  .glass-btn.primary {
+    background:
+      linear-gradient(180deg, rgba(96,165,250,0.35), rgba(37,99,235,0.6)),
+      var(--accent);
+    border: 1px solid rgba(96,165,250,0.55);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.35),
+      0 10px 30px rgba(37,99,235,0.35),
+      0 0 0 1px rgba(37,99,235,0.2);
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    padding-top: 90px;
+    padding-bottom: 40px;
+  }
+  .hero-grid {
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 60px;
+    align-items: center;
+    height: 100%;
+  }
+  .hero-left { text-align: left; min-width: 0; }
+  .hero-right { min-width: 0; }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: clamp(34px, 3.4vw, 52px);
+    color: white;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    max-width: 560px;
+  }
+  .hero .word-aura {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(90px, 11vw, 170px);
+    line-height: 0.85;
+    color: var(--accent);
+    letter-spacing: -0.05em;
+    margin-top: 14px;
+    background: linear-gradient(180deg, #60a5fa 0%, #2563EB 60%, #1d4ed8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 80px rgba(37,99,235,0.25);
+    position: relative;
+    white-space: nowrap;
+  }
+  .hero .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 22px;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+  .hero .eyebrow .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .hero-tagline {
+    color: var(--mute);
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 460px;
+    margin: 28px 0 32px;
+  }
+  .hero-meta {
+    display: flex; gap: 32px;
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    max-width: 520px;
+  }
+  .hero-meta div .k {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--mute);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .hero-meta div .v {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Spline embed shared */
+  .spline-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 480px;
+    border-radius: 24px;
+    background: transparent;
+    box-shadow: 0 0 80px rgba(37, 99, 235, 0.25);
+  }
+  .spline-frame iframe {
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    border: 0;
+    background: transparent;
+    display: block;
+    border-radius: 24px;
+  }
+  .spline-frame .spline-tag {
+    position: absolute;
+    top: 16px; left: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--mute);
+    text-transform: uppercase;
+    z-index: 2;
+    pointer-events: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: rgba(8,8,8,0.5);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Sections */
+  section { position: relative; }
+  .container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+
+  /* Features Strip */
+  .features {
+    padding: 110px 0 40px;
+  }
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .feature {
+    padding: 44px 32px;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .feature:last-child { border-right: none; }
+  .feature .ico-wrap {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: rgba(37,99,235,0.1);
+    border: 1px solid rgba(37,99,235,0.3);
+    display: grid; place-items: center;
+    color: var(--accent);
+  }
+  .feature h3 { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 28px; letter-spacing: -0.02em; }
+  .feature p { color: var(--mute); font-size: 15px; line-height: 1.55; }
+  .feature .num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--mute); letter-spacing: 0.18em; }
+
+  /* Immersive sound */
+  .immersive {
+    height: 100%;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 60px;
+    padding: 110px 32px 60px;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+  .immersive h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: clamp(48px, 6vw, 92px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+  .immersive p {
+    color: var(--mute);
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 28px 0 36px;
+    max-width: 480px;
+  }
+  .immersive .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+
+  /* Stack cards (one per snap section) */
+  .stack-card-section {
+    padding: 90px 32px 40px;
+    height: 100%;
+  }
+  .stack-intro-inline {
+    max-width: 1240px;
+    margin: 0 auto 28px;
+  }
+  .stack-card-inline {
+    max-width: 1240px;
+    margin: 0 auto;
+    height: calc(100% - 90px);
+    border-radius: 28px;
+    border: 1px solid var(--line);
+    background: #0c0c0e;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .stack-card-inline .inner {
+    height: 100%;
+    padding: 50px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+  .stack-card-inline .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .stack-card-inline h3 {
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: clamp(36px, 4vw, 56px);
+    margin: 16px 0 20px;
+    letter-spacing: -0.03em; line-height: 1;
+  }
+  .stack-card-inline p {
+    color: var(--mute); font-size: 16px; line-height: 1.6; max-width: 440px;
+  }
+  .stack-card-inline .visual {
+    height: 100%;
+    border-radius: 18px;
+    background: #0a0a0c;
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+    display: grid; place-items: center;
+  }
+
+  /* ANC visual */
+  .anc-vis {
+    position: relative;
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+  }
+  .anc-wave {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .anc-wave .bar {
+    width: 4px; height: 30%;
+    background: rgba(255,255,255,0.18);
+    border-radius: 4px;
+    transition: height 400ms cubic-bezier(.2,.7,.2,1), background 400ms;
+  }
+  .anc-wave.suppressed .bar { height: 6%; background: rgba(37,99,235,0.6); }
+  .anc-badge {
+    position: relative;
+    z-index: 2;
+    padding: 10px 16px;
+    border-radius: 99px;
+    background: rgba(37,99,235,0.15);
+    border: 1px solid rgba(37,99,235,0.4);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  /* Spatial dots */
+  .spatial {
+    width: 100%; height: 100%;
+    position: relative;
+    perspective: 800px;
+  }
+  .spatial .ring {
+    position: absolute;
+    border: 1px solid rgba(37,99,235,0.25);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .spatial .dot {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 99px;
+    background: var(--accent);
+    box-shadow: 0 0 16px var(--accent);
+    top: 50%; left: 50%;
+    margin: -6px 0 0 -6px;
+  }
+  .spatial .head {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 60px; height: 60px;
+    border-radius: 99px;
+    background: linear-gradient(180deg, #18181c, #0a0a0c);
+    border: 1px solid var(--line-strong);
+  }
+
+  /* Battery */
+  .batt {
+    width: 80%;
+    max-width: 420px;
+    height: 120px;
+    border: 3px solid var(--line-strong);
+    border-radius: 16px;
+    padding: 6px;
+    position: relative;
+  }
+  .batt::after {
+    content: ""; position: absolute; right: -16px; top: 30%;
+    width: 12px; height: 40%;
+    background: var(--line-strong);
+    border-radius: 0 4px 4px 0;
+  }
+  .batt-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+    border-radius: 8px;
+    box-shadow: 0 0 24px rgba(37,99,235,0.5);
+    width: 92%;
+  }
+  .batt-label {
+    position: absolute;
+    bottom: -32px; left: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--mute);
+    letter-spacing: 0.18em;
+  }
+
+  /* Materials */
+  .materials {
+    width: 100%; height: 100%;
+    display: grid; grid-template-columns: 1fr 1fr;
+  }
+  .materials > div {
+    position: relative;
+    display: grid; place-items: end start;
+    padding: 30px;
+  }
+  .mat-alum {
+    background:
+      repeating-linear-gradient(135deg,
+        rgba(255,255,255,0.06) 0px,
+        rgba(255,255,255,0.06) 1px,
+        transparent 1px,
+        transparent 4px),
+      linear-gradient(135deg, #2a2a2e, #18181c 60%, #28282c);
+  }
+  .mat-leather {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.04), transparent 30%),
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,0.4), transparent 40%),
+      linear-gradient(180deg, #1c0e0a, #0f0807);
+  }
+  .materials .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: white;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Specs */
+  .specs {
+    padding: 110px 0 40px;
+  }
+  .specs-head {
+    display: flex; justify-content: space-between; align-items: end;
+    margin-bottom: 60px;
+    flex-wrap: wrap; gap: 30px;
+  }
+  .specs-head h2 {
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: clamp(40px, 5vw, 72px);
+    letter-spacing: -0.03em; line-height: 1;
+    max-width: 600px;
+  }
+  .specs-head .meta { color: var(--mute); font-size: 14px; max-width: 320px; }
+  .specs-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .spec {
+    padding: 36px 24px;
+    border-right: 1px solid var(--line);
+  }
+  .spec:last-child { border-right: none; }
+  .spec .k {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--mute); text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .spec .v {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    letter-spacing: -0.02em;
+  }
+  .spec .v .unit { color: var(--mute); font-weight: 400; font-size: 16px; margin-left: 4px; }
+
+  /* Testimonials (each one is a snap section) */
+  .test {
+    height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 90px 40px 40px;
+    text-align: center;
+  }
+  .test-inner { max-width: 900px; }
+  .test .quote {
+    font-family: 'Syne', sans-serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(32px, 4vw, 56px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  .test .who {
+    margin-top: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.22em;
+    color: var(--mute); text-transform: uppercase;
+  }
+
+  /* Final CTA */
+  .final {
+    position: relative;
+    height: 100%;
+    display: grid; place-items: center;
+    text-align: center;
+    padding: 90px 40px 40px;
+    overflow: hidden;
+  }
+  .final .glow {
+    position: absolute;
+    width: 800px; height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,0.3), transparent 60%);
+    filter: blur(60px);
+    pointer-events: none;
+    animation: pulseGlow 4.5s ease-in-out infinite;
+    z-index: 0;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { transform: scale(0.85); opacity: 0.4; }
+    50% { transform: scale(1.1); opacity: 0.75; }
+  }
+  .final h2 {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: clamp(72px, 12vw, 200px);
+    letter-spacing: -0.05em; line-height: 0.9;
+    position: relative; z-index: 1;
+  }
+  .final .ctas {
+    display: flex; gap: 18px; margin-top: 56px;
+    position: relative; z-index: 1;
+  }
+  .final .ctas .glass-btn { padding: 16px 32px; font-size: 15px; }
+
+  /* Smaller breakpoints */
+  @media (max-width: 900px) {
+    .nav .links { display: none; }
+    .nav { padding: 18px 22px; }
+    .immersive { grid-template-columns: 1fr; gap: 20px; padding: 90px 24px 40px; overflow-y: auto; }
+    .spline-frame { min-height: 400px !important; }
+    .spline-frame iframe { min-height: 400px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 24px; padding: 0 22px; overflow-y: auto; }
+    .hero { padding-top: 90px; padding-bottom: 24px; }
+    .hero h1 { font-size: clamp(26px, 6vw, 36px); }
+    .hero .word-aura { font-size: clamp(80px, 22vw, 130px); }
+    .hero-meta { flex-wrap: wrap; gap: 18px; margin-top: 24px; padding-top: 18px; }
+    .hero-tagline { margin: 18px 0 22px; }
+    .stack-card-inline .inner { grid-template-columns: 1fr; padding: 24px; gap: 20px; overflow-y: auto; }
+    .stack-card-inline .visual { min-height: 200px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .feature { border-right: none; border-bottom: 1px solid var(--line); padding: 22px 24px; gap: 10px; }
+    .feature h3 { font-size: 22px; }
+    .features { padding: 90px 0 24px; }
+    .specs { padding: 90px 0 24px; }
+    .specs-grid { grid-template-columns: repeat(2, 1fr); }
+    .spec { border-bottom: 1px solid var(--line); padding: 22px 16px; }
+    .spec:nth-child(odd) { border-right: 1px solid var(--line); }
+    .spec:nth-child(even) { border-right: none; }
+    .spec .v { font-size: 24px; }
+    html, body { cursor: auto; }
+    .cursor-dot, .cursor-ring { display: none; }
+    .snap-dots { right: 14px; gap: 10px; }
+    .snap-dot::after { display: none; }
+    .snap-section { height: auto; min-height: 100vh; }
+    .snap-wrap { scroll-snap-type: y proximity; }
+  }
+</style>
+</head>
+<body data-screen-label="01 Aura Landing">
+
+<div class="grain"></div>
+<div class="scroll-progress" id="progress"></div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="logo">AURA</div>
+  <div class="links">
+    <a href="#" data-go="0">Intro</a>
+    <a href="#" data-go="1">Features</a>
+    <a href="#" data-go="2">Sound</a>
+    <a href="#" data-go="7">Specs</a>
+  </div>
+  <button class="glass-btn" data-go="11">Shop Now</button>
+</nav>
+
+<!-- DOT NAV -->
+<aside class="snap-dots" id="snapDots">
+  <button class="snap-dot" data-go="0" data-label="Intro" aria-label="Intro"></button>
+  <button class="snap-dot" data-go="1" data-label="Highlights" aria-label="Highlights"></button>
+  <button class="snap-dot" data-go="2" data-label="Sound" aria-label="Sound"></button>
+  <button class="snap-dot" data-go="3" data-label="ANC" aria-label="ANC"></button>
+  <button class="snap-dot" data-go="4" data-label="Spatial" aria-label="Spatial"></button>
+  <button class="snap-dot" data-go="5" data-label="Battery" aria-label="Battery"></button>
+  <button class="snap-dot" data-go="6" data-label="Materials" aria-label="Materials"></button>
+  <button class="snap-dot" data-go="7" data-label="Specs" aria-label="Specs"></button>
+  <button class="snap-dot" data-go="8" data-label="Review · 01" aria-label="Review 1"></button>
+  <button class="snap-dot" data-go="9" data-label="Review · 02" aria-label="Review 2"></button>
+  <button class="snap-dot" data-go="10" data-label="Review · 03" aria-label="Review 3"></button>
+  <button class="snap-dot" data-go="11" data-label="Buy" aria-label="Buy"></button>
+</aside>
+
+<main class="snap-wrap" id="snap">
+
+<!-- 0 · HERO -->
+<section class="hero snap-section" data-idx="0" data-screen-label="Hero">
+  <div class="hero-grid">
+    <div class="hero-left">
+      <div class="eyebrow snap-reveal"><span class="dot"></span><span class="mono">AURA / GEN 03 / FLAGSHIP</span></div>
+      <h1 class="snap-reveal d1">The Last Headphones<br/>You'll Ever Need.</h1>
+      <div class="word-aura snap-reveal d2">AURA</div>
+      <p class="hero-tagline snap-reveal d3">Hear everything. Block out the rest. Three years of acoustic research, condensed into 250 grams of aluminium and leather.</p>
+      <div class="snap-reveal d4" style="display:flex;gap:14px;align-items:center;">
+        <button class="glass-btn primary">Configure Yours</button>
+        <button class="glass-btn">Listen to a Demo</button>
+      </div>
+      <div class="hero-meta snap-reveal d5">
+        <div><span class="k">Drag · Rotate</span><span class="v">Pick a colour</span></div>
+        <div><span class="k">Ships</span><span class="v">In 5 days</span></div>
+        <div><span class="k">Returns</span><span class="v">100 days</span></div>
+      </div>
+    </div>
+    <div class="hero-right snap-reveal d2">
+      <div class="spline-frame">
+        <span class="spline-tag">Live · Drag to colour</span>
+        <iframe
+          src="https://my.spline.design/boseheadphonescolorizer-JW5VYKWti1TWlKyMcilpR1Gd/"
+          frameborder="0"
+          width="100%"
+          height="100%"
+          style="border: none; background: transparent;"
+          loading="lazy"
+          title="AURA headphones — interactive colorizer"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 1 · FEATURES STRIP -->
+<section class="features snap-section" data-idx="1" data-screen-label="Features">
+  <div class="container snap-reveal" style="display:flex;justify-content:space-between;align-items:end;margin-bottom:36px;flex-wrap:wrap;gap:20px;">
+    <div>
+      <div class="mono" style="font-size:11px;letter-spacing:.22em;color:var(--mute);text-transform:uppercase;margin-bottom:14px">/ Highlights</div>
+      <h2 class="syne" style="font-size:clamp(36px,4vw,56px);font-weight:600;letter-spacing:-0.03em;line-height:1;max-width:600px">Engineered for the discerning ear.</h2>
+    </div>
+    <div class="mono" style="font-size:12px;color:var(--mute);max-width:280px;line-height:1.6;">Three years of acoustic research. Eleven patents. One uncompromising standard.</div>
+  </div>
+  <div class="container">
+    <div class="features-grid" style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+      <div class="feature snap-reveal d1">
+        <div class="ico-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="13,2 4,14 12,14 11,22 20,10 12,10" fill="currentColor"/></svg>
+        </div>
+        <div class="num">01 / Endurance</div>
+        <h3>40 Hour Battery</h3>
+        <p>Four full work days on a single charge. Ten minutes of USB-C gives you another six hours.</p>
+      </div>
+      <div class="feature snap-reveal d2">
+        <div class="ico-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12c2 0 2-6 4-6s2 12 4 12 2-9 4-9 2 6 4 6 2-3 2-3"/></svg>
+        </div>
+        <div class="num">02 / Silence</div>
+        <h3>ANC Pro</h3>
+        <p>Adaptive noise cancellation samples the world 48,000 times a second and erases it before it reaches you.</p>
+      </div>
+      <div class="feature snap-reveal d3">
+        <div class="ico-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l10-2v13" /><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="16" cy="16" r="3" fill="currentColor"/></svg>
+        </div>
+        <div class="num">03 / Resolution</div>
+        <h3>Hi-Res Audio</h3>
+        <p>Studio-grade 24-bit / 96kHz playback over LDAC. Hear the room the recording was made in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · IMMERSIVE SOUND -->
+<section class="snap-section" id="sound" data-idx="2" data-screen-label="Immersive Sound">
+  <div class="immersive">
+    <div class="snap-reveal">
+      <div class="label mono">/ Spatial Audio</div>
+      <h2>Sound that<br/>moves you.</h2>
+      <p>Twelve-microphone array. Head-tracked dynamic mixing. Every note placed precisely in the room around you — even when the room is a subway car.</p>
+      <button class="glass-btn">Explore Sound</button>
+    </div>
+    <div class="spline-frame snap-reveal d2" id="visualizer">
+      <span class="spline-tag">Live · 3D showcase</span>
+      <iframe
+        src="https://my.spline.design/3dheadphonesproductpage-9k5Cn2bXRdXUoFDFA04edZOy/"
+        frameborder="0"
+        width="100%"
+        height="100%"
+        style="border: none; background: transparent;"
+        loading="lazy"
+        title="AURA headphones — product showcase"
+      ></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · ANC -->
+<section class="snap-section stack-card-section" data-idx="3" data-screen-label="ANC">
+  <div class="stack-intro-inline snap-reveal">
+    <div class="mono" style="font-size:11px;letter-spacing:.22em;color:var(--mute);text-transform:uppercase;margin-bottom:8px;">/ Capability 01 of 04</div>
+  </div>
+  <div class="stack-card-inline snap-reveal d1">
+    <div class="inner">
+      <div>
+        <div class="num">01 / Active Noise Cancellation</div>
+        <h3>Erase the world.</h3>
+        <p>Six feed-forward and six feed-back microphones generate an inverse waveform 48,000 times per second. The room you're in disappears.</p>
+      </div>
+      <div class="visual">
+        <div class="anc-vis">
+          <div class="anc-wave" id="ancWave"></div>
+          <div class="anc-badge">ANC ENGAGED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · SPATIAL -->
+<section class="snap-section stack-card-section" data-idx="4" data-screen-label="Spatial Audio">
+  <div class="stack-intro-inline snap-reveal">
+    <div class="mono" style="font-size:11px;letter-spacing:.22em;color:var(--mute);text-transform:uppercase;margin-bottom:8px;">/ Capability 02 of 04</div>
+  </div>
+  <div class="stack-card-inline snap-reveal d1">
+    <div class="inner">
+      <div>
+        <div class="num">02 / Spatial Audio</div>
+        <h3>A room around your head.</h3>
+        <p>Head-tracked Dolby Atmos. As you turn your head, the soundstage stays still — like sitting in front of real speakers.</p>
+      </div>
+      <div class="visual">
+        <div class="spatial" id="spatial">
+          <div class="ring" style="width:140px;height:140px"></div>
+          <div class="ring" style="width:240px;height:240px"></div>
+          <div class="ring" style="width:340px;height:340px"></div>
+          <div class="head"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · BATTERY -->
+<section class="snap-section stack-card-section" data-idx="5" data-screen-label="Battery">
+  <div class="stack-intro-inline snap-reveal">
+    <div class="mono" style="font-size:11px;letter-spacing:.22em;color:var(--mute);text-transform:uppercase;margin-bottom:8px;">/ Capability 03 of 04</div>
+  </div>
+  <div class="stack-card-inline snap-reveal d1">
+    <div class="inner">
+      <div>
+        <div class="num">03 / 40 Hour Battery</div>
+        <h3>Charge on Monday. Forget about it.</h3>
+        <p>A 1,200 mAh lithium polymer pack tucked into the left cup. USB-C fast charge. Wireless Qi standard. Nothing to think about.</p>
+      </div>
+      <div class="visual">
+        <div class="batt">
+          <div class="batt-fill" id="battFill"></div>
+          <div class="batt-label mono">40H · 92% CHARGED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · MATERIALS -->
+<section class="snap-section stack-card-section" data-idx="6" data-screen-label="Materials">
+  <div class="stack-intro-inline snap-reveal">
+    <div class="mono" style="font-size:11px;letter-spacing:.22em;color:var(--mute);text-transform:uppercase;margin-bottom:8px;">/ Capability 04 of 04</div>
+  </div>
+  <div class="stack-card-inline snap-reveal d1">
+    <div class="inner">
+      <div>
+        <div class="num">04 / Materials</div>
+        <h3>Aluminium. Leather. Nothing else.</h3>
+        <p>CNC-milled 6061 aluminium yokes. Full-grain Italian leather earcups. No plastic on a surface you'll ever touch.</p>
+      </div>
+      <div class="visual">
+        <div class="materials">
+          <div class="mat-alum"><span class="tag mono">6061 ALUMINIUM</span></div>
+          <div class="mat-leather"><span class="tag mono">FULL-GRAIN LEATHER</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · SPECS -->
+<section class="specs snap-section" id="specs" data-idx="7" data-screen-label="Specs">
+  <div class="container">
+    <div class="specs-head snap-reveal">
+      <h2>The technical truth.</h2>
+      <div class="meta">Every number measured. Every figure verified by independent acoustic labs in Berlin and Tokyo.</div>
+    </div>
+    <div class="specs-grid">
+      <div class="spec snap-reveal d1">
+        <div class="k">Driver</div>
+        <div class="v">40<span class="unit">mm</span></div>
+      </div>
+      <div class="spec snap-reveal d2">
+        <div class="k">Frequency</div>
+        <div class="v">20<span class="unit">Hz – 20kHz</span></div>
+      </div>
+      <div class="spec snap-reveal d3">
+        <div class="k">Impedance</div>
+        <div class="v">32<span class="unit">Ω</span></div>
+      </div>
+      <div class="spec snap-reveal d4">
+        <div class="k">Weight</div>
+        <div class="v">250<span class="unit">g</span></div>
+      </div>
+      <div class="spec snap-reveal d5">
+        <div class="k">Bluetooth</div>
+        <div class="v">5.3<span class="unit"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · TESTIMONIAL 1 -->
+<section class="snap-section" data-idx="8" data-bg="rgba(37,99,235,0.00)" data-screen-label="Testimonial 01">
+  <div class="test">
+    <div class="test-inner">
+      <div class="quote snap-reveal">"The first set of headphones I've owned that I forgot I was wearing. Three flights, twelve hours, nothing."</div>
+      <div class="who snap-reveal d1">Reza Aslan · Mastering Engineer · Abbey Road</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · TESTIMONIAL 2 -->
+<section class="snap-section" data-idx="9" data-bg="rgba(37,99,235,0.04)" data-screen-label="Testimonial 02">
+  <div class="test">
+    <div class="test-inner">
+      <div class="quote snap-reveal">"I review headphones for a living. I've never recommended a pair this strongly."</div>
+      <div class="who snap-reveal d1">Marielle Cho · Editor in Chief · Cadence</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · TESTIMONIAL 3 -->
+<section class="snap-section" data-idx="10" data-bg="rgba(37,99,235,0.08)" data-screen-label="Testimonial 03">
+  <div class="test">
+    <div class="test-inner">
+      <div class="quote snap-reveal">"It is the silence that sells these. The world simply stops mattering."</div>
+      <div class="who snap-reveal d1">Jonas Wittmann · Composer · Berlin Philharmonic</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · FINAL CTA -->
+<section class="final snap-section" data-idx="11" data-screen-label="Final CTA">
+  <div class="glow"></div>
+  <h2 class="snap-reveal">Experience<br/>AURA.</h2>
+  <div class="ctas snap-reveal d2">
+    <button class="glass-btn primary">Buy Now — $499</button>
+    <button class="glass-btn">Learn More</button>
+  </div>
+  <div class="snap-reveal d4" style="position:absolute;bottom:32px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 40px;color:var(--mute);font-size:12px;letter-spacing:0.06em;flex-wrap:wrap;gap:16px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;color:white;letter-spacing:0.04em;font-size:16px;">AURA</div>
+    <div class="mono">© 2026 AURA AUDIO LABS · OSLO / NEW YORK / TOKYO</div>
+    <div class="mono">EST. 2021</div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+  const snap = document.getElementById('snap');
+  const sections = Array.from(document.querySelectorAll('.snap-section'));
+  const dots = Array.from(document.querySelectorAll('.snap-dot'));
+
+  // Custom cursor
+  const dot = document.getElementById('cdot');
+  const ring = document.getElementById('cring');
+  let mx = window.innerWidth/2, my = window.innerHeight/2;
+  let rx = mx, ry = my;
+  window.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    dot.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
+  });
+  function raf() {
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
+    ring.style.transform = `translate3d(${rx}px, ${ry}px, 0) translate(-50%, -50%)`;
+    requestAnimationFrame(raf);
+  }
+  raf();
+  document.querySelectorAll('a, button, .glass-btn, .snap-dot').forEach(el => {
+    el.addEventListener('mouseenter', () => dot.classList.add('hover'));
+    el.addEventListener('mouseleave', () => dot.classList.remove('hover'));
+  });
+  document.querySelectorAll('.glass-btn').forEach(btn => {
+    btn.addEventListener('mousemove', e => {
+      const r = btn.getBoundingClientRect();
+      btn.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      btn.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+
+  // Scroll progress + nav scrolled
+  const prog = document.getElementById('progress');
+  const nav = document.getElementById('nav');
+  function onScroll() {
+    const h = snap.scrollHeight - snap.clientHeight;
+    const p = h > 0 ? Math.min(1, Math.max(0, snap.scrollTop / h)) : 0;
+    prog.style.width = (p * 100) + '%';
+    if (snap.scrollTop > 30) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
+  }
+  snap.addEventListener('scroll', onScroll, { passive: true });
+
+  // Active section detection — fires reveals and applies bg tint
+  let currentIdx = 0;
+  function setActive(idx) {
+    if (idx === currentIdx) return;
+    currentIdx = idx;
+    sections.forEach((s, i) => s.classList.toggle('snapped', i <= idx));
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    const bg = sections[idx]?.dataset.bg;
+    document.body.style.background = bg && bg !== 'rgba(8,8,8,1)' ? bg : 'var(--bg)';
+  }
+
+  const sectionObserver = new IntersectionObserver(entries => {
+    let best = null;
+    entries.forEach(e => {
+      if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
+    });
+    if (best && best.intersectionRatio > 0.5) {
+      const idx = parseInt(best.target.dataset.idx, 10);
+      setActive(idx);
+    }
+  }, { root: snap, threshold: [0.25, 0.5, 0.75, 0.95] });
+  sections.forEach(s => sectionObserver.observe(s));
+
+  // First section snapped on load
+  sections[0].classList.add('snapped');
+  dots[0].classList.add('active');
+
+  // Navigation: click handlers (dots + nav)
+  function goTo(idx) {
+    if (idx < 0 || idx >= sections.length) return;
+    const target = sections[idx];
+    snap.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  }
+  document.querySelectorAll('[data-go]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      const idx = parseInt(el.dataset.go, 10);
+      goTo(idx);
+    });
+  });
+
+  // Keyboard navigation
+  let kbLock = false;
+  window.addEventListener('keydown', e => {
+    if (kbLock) return;
+    if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
+      if (e.key === ' ' && document.activeElement && document.activeElement.tagName === 'BUTTON') return;
+      e.preventDefault();
+      kbLock = true;
+      setTimeout(() => kbLock = false, 600);
+      goTo(currentIdx + 1);
+    } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
+      e.preventDefault();
+      kbLock = true;
+      setTimeout(() => kbLock = false, 600);
+      goTo(currentIdx - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(sections.length - 1);
+    }
+  });
+
+  // ANC wave bars + animation toggle on snap
+  const ancWave = document.getElementById('ancWave');
+  if (ancWave) {
+    for (let i = 0; i < 40; i++) {
+      const b = document.createElement('div');
+      b.className = 'bar';
+      const h = 20 + Math.sin(i * 0.6) * 30 + Math.random() * 20;
+      b.style.height = Math.max(20, Math.min(80, h)) + '%';
+      ancWave.appendChild(b);
+    }
+    const ancSection = sections[3];
+    const ancIO = new IntersectionObserver(es => {
+      es.forEach(e => {
+        if (e.intersectionRatio > 0.5) {
+          setTimeout(() => ancWave.classList.add('suppressed'), 700);
+        } else {
+          ancWave.classList.remove('suppressed');
+        }
+      });
+    }, { root: snap, threshold: [0.3, 0.5, 0.7] });
+    ancIO.observe(ancSection);
+  }
+
+  // Spatial dots
+  const spatial = document.getElementById('spatial');
+  if (spatial) {
+    const dotsData = [
+      { r: 70, a: 0, s: 1.2 },
+      { r: 70, a: Math.PI * 0.5, s: 1.0 },
+      { r: 120, a: Math.PI * 0.8, s: 0.8 },
+      { r: 120, a: Math.PI * 1.5, s: 1.4 },
+      { r: 170, a: Math.PI * 0.2, s: 0.6 },
+      { r: 170, a: Math.PI * 1.1, s: 1.1 },
+    ];
+    const dotEls = dotsData.map(() => {
+      const el = document.createElement('div');
+      el.className = 'dot';
+      spatial.appendChild(el);
+      return el;
+    });
+    let sT = 0;
+    function animateSpatial() {
+      sT += 0.012;
+      dotsData.forEach((d, i) => {
+        const a = d.a + sT * d.s;
+        const x = Math.cos(a) * d.r;
+        const y = Math.sin(a) * d.r;
+        dotEls[i].style.transform = `translate(${x}px, ${y}px)`;
+      });
+      requestAnimationFrame(animateSpatial);
+    }
+    animateSpatial();
+  }
+
+  // Init
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
