@@ -1,82 +1,54 @@
-# Aura: Premium Headphones Landing Page
+# What it is
 
-> Hear everything. Block out the rest.
-
-![Status](https://img.shields.io/badge/status-live-brightgreen)
-![HTML](https://img.shields.io/badge/html-5-E34F26)
-![CSS](https://img.shields.io/badge/css-3-1572B6)
-![JavaScript](https://img.shields.io/badge/javascript-vanilla-F7DF1E)
-
-**Live site: [aura-headphones-may21-2026.vercel.app](https://aura-headphones-may21-2026.vercel.app)**
-
----
-
-## What It Is
-
-Aura is a concept landing page for a premium headphones brand. Fifth project overall, first built as pure HTML/CSS/JS with no framework. The brief was to build something scroll-driven and interactive, closer to an Apple-style product microsite than a standard marketing page.
-
-Built with Claude Design, deployed on Vercel.
+It's a brand new, fully front-end idea landing page I've created for a luxury headphone company. It's the 5th project I've made to date, and it's the 1st I've ever built exclusively with HTML/CSS/JS, without a single frame. The main goal of the project was to create a truly scroll-driven and interactive experience. Think of the page as a microsite rather than a traditional marketing page-more of an Apple-esque experience. Designed in Claude Design, built from scratch, and hosted via Vercel.
 
 ---
 
 ## How It Works
 
-The page is a single HTML file. No build step, no dependencies, no npm. Everything runs in the browser.
+The site is delivered in a single HTML file. There's no build pipeline and no external libraries to be installed; the entire page can just be opened directly in the browser. No npm. No node_modules. None.
 
-**Snap scroll** via CSS scroll-snap-type: y mandatory. Each section locks into place as you scroll, like flipping through a book. Twelve sections total.
-
-**Reveal animations** trigger when each section snaps into view. Elements start at opacity 0 and translateY 28px, then transition in with staggered delays.
-
-**3D headphone models** via two Spline embeds. The hero uses an interactive Bose colorizer scene where you can drag and change colors in real time. The immersive sound section uses a full product showcase scene.
-
-**Custom cursor** is a glowing blue dot with a lagged ring that follows behind it. Scales up on hover.
-
-**ANC visualizer** in the noise cancellation section generates 40 animated bars that suppress themselves when the section snaps into view, showing the noise cancellation concept visually.
-
-**Spatial audio visualizer** animates 6 dots orbiting a center point at different speeds and radii, representing the 3D audio positioning system.
-
-**Keyboard navigation** via arrow keys, Page Up/Down, Home, End.
-
-**Navigation dots** on the right side show which section you're on. Each dot has a label tooltip on hover.
+- **SnapScroll** - I've implemented a CSS scroll-snap-type property of 'y mandatory'. This makes the page scroll down like a flip-book, and each section acts as a distinct 'page' with a unique feel. I ended up with twelve of these pages.
+- **RevealAnimations** - When one of these pages snaps into view, its contents smoothly fade and animate in. Everything starts hidden, with slight vertical displacement, before gracefully animating into its final position with subtle timing delays.
+- **3DHeadphoneModels** - The page incorporates two 3D headphone models powered by Spline. In the Hero, I've implemented an interactive color changer so you can change colors with a drag, and in the Immerse section, you can get a full view of the product in 3D.
+- **CustomCursor** - A glowy blue dot is used as a cursor, with a slight trailing ring behind it. The cursor gets slightly larger when it hovers over any interactive elements.
+- **ANCVisualizer** - The ANC section contains forty individual bars which move upward from the bottom to simulate sound being blocked.
+- **SpatialAudioVisualizer** - To visually demonstrate the 3D audio, six dots of different sizes and speed orbit around a central point.
+- **KeyboardNavigation** - The entire page is fully navigable via your arrow keys, Page Up/Down, Home, and End keys.
+- **NavigationDots** - On the right side of the screen, a number of dots shows you which page of the site you are currently on, along with tooltips when you hover over them.
 
 ---
 
 ## Sections
 
-1. Hero: interactive 3D headphone colorizer, headline, CTAs
-2. Features: 40hr battery, ANC Pro, Hi-Res Audio
-3. Immersive Sound: spatial audio section with 3D product showcase
-4. ANC: animated noise cancellation visualizer
-5. Spatial Audio: orbiting dots animation
-6. Battery: animated battery fill
-7. Materials: aluminium and leather texture panels
-8. Specs: driver, frequency, impedance, weight, bluetooth
+1. Hero:Interactive 3D headphone color changer, compelling headlines and calls to action.
+2. Features:Highlights of the key selling points:40-hour battery life, ANC Pro, Hi-Res Audio.
+3. Immerse:A spatial audio-immersive 3D view of the headphone.
+4. ANC:A visual representation of Active Noise Cancellation, where noise gets absorbed by a block of bars.
+5. SpatialAudio:A more abstract visual demonstration of sound.
+6. Battery: A simple and visually engaging battery animation to indicate usage.
+7. Materials:Displays textures of aluminium and leather materials to communicate quality.
+8. Specs:Contains all technical specifications such asdriver size,frequency response,impedance,weight, andBluetoothversion.
 9. Testimonial 01
 10. Testimonial 02
 11. Testimonial 03
-12. Final CTA: buy now
+12. Final Call to Action: A purchaseCTA button to end the journey.
 
 ---
 
-## Tech
+## TechStack
 
 | Layer | Detail |
-|-------|--------|
+| :--------------------- | :-------------------------------------------------------------- |
 | Markup | HTML5 |
-| Styling | Vanilla CSS with custom properties |
-| Animation | CSS transitions + vanilla JS |
-| 3D scenes | Spline embeds via iframe |
-| Fonts | Syne, DM Sans, JetBrains Mono (Google Fonts) |
-| Deployment | Vercel |
+| Styling |Vanilla CSS with custom properties. |
+| Animation | CSS transitions and vanilla JavaScript (IntersectionObserver API). |
+| 3D scenes |Spline embed(via iframes). |
+| Fonts | Syne, DM Sans and JetBrains Mono (allvia Google Fonts). |
+| Deployment |Vercel. |
 
 ---
 
-## What I Learned
+## KeyTakeaways
 
-Pure HTML/CSS/JS is underrated. No React, no build step, no node_modules. The snap scroll behavior, custom cursor, intersection observers, and all the animations are just browser APIs. Getting the IntersectionObserver logic right for triggering section reveals cleanly took iteration. The ANC bar suppression animation was the most satisfying detail to get working.
-
----
-
-## About
-
-Built by Youbo (Damon) Bao, a student developer at Ridley College interested in mechanical engineering, aerospace, and building things at the intersection of physics and software.
+Working on a 100% front-end-only project like this without a single line of code related toReactor any sort of build pipeline was incredibly liberating. Everything from the snap scroll to the custom cursor and all the various animated effects(which leveraged browser APIs like the IntersectionObserver) runs entirely within the browser, no node_modules whatsoever. There were challenges to overcome with making the IntersectionObserver calls to reveal sections super smooth, as well as getting the ANC animation to look natural and satisfying.
